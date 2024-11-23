@@ -76,7 +76,8 @@ public class SettingsUI implements NuklearUIModule {
     private DrawMode drawMode = DrawMode.DRAWMODE_NAVMESH;
     private boolean meshInputTrigerred;
     private boolean navMeshInputTrigerred;
-
+	private boolean saveNavMeshTriggered;
+	
     @Override
     public boolean layout(NkContext ctx, int x, int y, int width, int height, int mouseX, int mouseY) {
         boolean mouseInside = false;
@@ -188,7 +189,7 @@ public class SettingsUI implements NuklearUIModule {
                 tiled = nk_check_text(ctx, "Enable", tiled);
                 if (tiled) {
                     nk_layout_row_dynamic(ctx, 20, 1);
-                    nk_property_int(ctx, "Tile Size", 16, tileSize, 1024, 16, 16);
+                    nk_property_int(ctx, "Tile Size", 16, tileSize, 16384, 16, 16);
                     nk_layout_row_dynamic(ctx, 18, 1);
                     nk_label(ctx, String.format("Tiles %d x %d", tiles[0], tiles[1]), NK_TEXT_ALIGN_RIGHT);
                     nk_layout_row_dynamic(ctx, 18, 1);
@@ -203,9 +204,11 @@ public class SettingsUI implements NuklearUIModule {
                 buildTriggered = nk_button_text(ctx, "Build");
                 nk_layout_row_dynamic(ctx, 3, 1);
                 nk_spacing(ctx, 1);
+				nk_layout_row_dynamic(ctx, 20, 1);
+				saveNavMeshTriggered = nk_button_text(ctx, "Save Nav Mesh...");
                 nk_layout_row_dynamic(ctx, 18, 1);
                 navMeshInputTrigerred = nk_button_text(ctx, "Load Nav Mesh...");
-
+				
                 nk_layout_row_dynamic(ctx, 18, 1);
                 nk_label(ctx, "Draw", NK_TEXT_ALIGN_LEFT);
                 drawMode = NuklearUIHelper.nk_radio(ctx, DrawMode.values(), drawMode, dm -> dm.toString());
@@ -272,7 +275,11 @@ public class SettingsUI implements NuklearUIModule {
     public boolean isFilterWalkableLowHeightSpans() {
         return filterWalkableLowHeightSpans;
     }
-
+	
+	public boolean isSaveNavMeshTriggerred() {
+		return saveNavMeshTriggered;
+	}
+	
     public void setBuildTime(long buildTime) {
         this.buildTime = buildTime;
     }
@@ -326,7 +333,10 @@ public class SettingsUI implements NuklearUIModule {
     public void setMaxPolys(int maxPolys) {
         this.maxPolys = maxPolys;
     }
-
+	
+	public void setSaveNavMeshTriggerred(boolean saveNavMeshTriggered) {
+		this.saveNavMeshTriggered = saveNavMeshTriggered;
+	}
     public boolean isMeshInputTrigerred() {
         return meshInputTrigerred;
     }

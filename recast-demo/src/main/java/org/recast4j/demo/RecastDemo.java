@@ -80,6 +80,12 @@ import org.recast4j.recast.RecastConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import org.recast4j.recast.PolyMesh;
+import org.recast4j.recast.PolyMeshDetail;
+
 public class RecastDemo {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -125,6 +131,38 @@ public class RecastDemo {
     private ToolsUI toolsUI;
     private SettingsUI settingsUI;
     private long prevFrameTime;
+	
+	private void saveNavMeshAsObj(List<RecastBuilderResult> results, String filename) {
+		try {
+			Path path = Paths.get(filename);
+			path.getParent().toFile().mkdirs();
+			FileWriter fw = new FileWriter(path.toFile());
+
+			int vertexOffset = 0;
+
+			for (RecastBuilderResult result : results) {
+				PolyMesh mesh = result.getMesh();
+				PolyMeshDetail dmesh = result.getMeshDetail();
+				if (dmesh==null) continue;
+				for (int v = 0; v < dmesh.nverts; v++) {
+					fw.write("v " + dmesh.verts[v * 3] + " " + dmesh.verts[v * 3 + 1] + " " + dmesh.verts[v * 3 + 2] + "\n");
+				}
+				for (int m = 0; m < dmesh.nmeshes; m++) {
+					int vfirst = dmesh.meshes[m * 4] + vertexOffset;
+					int tfirst = dmesh.meshes[m * 4 + 2];
+					for (int f = 0; f < dmesh.meshes[m * 4 + 3]; f++) {
+						fw.write("f " + (vfirst + dmesh.tris[(tfirst + f) * 4] + 1) + " "
+								+ (vfirst + dmesh.tris[(tfirst + f) * 4 + 1] + 1) + " "
+								+ (vfirst + dmesh.tris[(tfirst + f) * 4 + 2] + 1) + "\n");
+					}
+				}
+				vertexOffset += dmesh.nverts;
+			}
+			fw.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
     public void start() {
         long window = initializeOpenGL();
@@ -194,7 +232,22 @@ public class RecastDemo {
             float[] modelviewMatrix = dd.viewMatrix(cameraPos, cameraEulers);
 
             mouseOverMenu = nuklearUI.layout(window, 0, 0, width, height, (int) mousePos[0], (int) mousePos[1]);
-
+			
+			if (settingsUI.isSaveNavMeshTriggerred()) {
+				settingsUI.setSaveNavMeshTriggerred(false);
+				try (MemoryStack stack = stackPush()) {
+					PointerBuffer aFilterPatterns = stack.mallocPointer(1);
+					aFilterPatterns.put(stack.UTF8("*.obj"));
+					aFilterPatterns.flip();
+					String filename = TinyFileDialogs.tinyfd_saveFileDialog("Save Nav Mesh File", "", aFilterPatterns,
+							"Mesh File (*.obj)");
+					if (filename != null) {
+						if (sample.getRecastResults() != null && !sample.getRecastResults().isEmpty()) {
+							saveNavMeshAsObj(sample.getRecastResults(), filename);
+						}
+					}
+				}
+			}
             if (settingsUI.isMeshInputTrigerred()) {
                 try (MemoryStack stack = stackPush()) {
                     PointerBuffer aFilterPatterns = stack.mallocPointer(2);
@@ -392,11 +445,11 @@ public class RecastDemo {
                 if (yoffset < 0) {
                     // wheel down
                     if (!mouseOverMenu) {
-                        scrollZoom += 1.0f;
+                        scrollZoom += 18.0f;
                     }
                 } else {
                     if (!mouseOverMenu) {
-                        scrollZoom -= 1.0f;
+                        scrollZoom -= 18.0f;
                     }
                 }
                 float[] modelviewMatrix = dd.viewMatrix(cameraPos, cameraEulers);
